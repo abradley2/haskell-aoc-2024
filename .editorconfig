@@ -1,0 +1,7 @@
+[*.hs]
+indent_size = 4
+indent_style = space
+insert_final_newline = true
+
+[*.txt]
+insert_final_newline = false
