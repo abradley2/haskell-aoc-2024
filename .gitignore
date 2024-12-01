@@ -1,2 +1,4 @@
 dist-newstyle/
 debug.txt
+**/input.txt
+**/debug.txt
