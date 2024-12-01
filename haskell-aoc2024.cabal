@@ -21,21 +21,20 @@ library
     -- other-extensions:
     build-depends:    
         base ^>=4.16.4.0,
-        rio == 0.1.22.0
+        rio == 0.1.22.0,
+        text ^>= 2.0.0,
+        parsec == 3.1.17.0
     hs-source-dirs:   lib
     default-language: GHC2021
 
 executable day00
     import:           warnings
     main-is:          Main.hs
-    default-extensions: OverloadedStrings,
-                        ImportQualifiedPost
-                     
-    -- other-modules:
-    -- other-extensions:
     build-depends:
         base ^>=4.16.4.0,
         rio == 0.1.22.0,
+        text ^>= 2.0.0,
+        parsec == 3.1.17.0,
         haskell-aoc2024
 
     hs-source-dirs:   day00
