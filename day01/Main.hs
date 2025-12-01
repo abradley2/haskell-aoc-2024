@@ -3,25 +3,29 @@
 
 module Main where
 
-import Lib (Env (..), parseInt)
-import RIO
-import RIO.HashMap qualified as HashMap
-import RIO.List (sort)
+import Data.Either
+import Data.HashMap.Lazy qualified as HashMap
+import Lib (intParser)
+import Relude
 import Text.Parsec qualified as Parsec
 import Text.Parsec.Text (Parser)
 
 newtype Error = Error Parsec.ParseError deriving (Show)
+
 instance Exception Error
 
 inputParser :: Parser [(Int, Int)]
-inputParser = run []
+inputParser = do
+  inputLines <- Parsec.many1 parseLine
+  _ <- Parsec.eof
+  pure inputLines
   where
-    run res = do
-        l <- Parsec.many1 Parsec.digit >>= parseInt
-        _ <- Parsec.many1 Parsec.space
-        r <- Parsec.many1 Parsec.digit >>= parseInt
-        let line = (l, r)
-        (Parsec.eof >> pure (reverse $ line : res)) <|> (Parsec.newline >> run (line : res))
+    parseLine = do
+      l <- intParser
+      _ <- Parsec.many1 Parsec.space
+      r <- intParser
+      _ <- Parsec.optionMaybe Parsec.newline
+      pure (l, r)
 
 partition :: [(Int, Int)] -> ([Int], [Int])
 partition = run [] []
@@ -35,28 +39,24 @@ calcPartOne = run 0
     run result (l : lnext, r : rnext) = run (result + abs (l - r)) (lnext, rnext)
     run result _ = result
 
-partOne :: ByteString -> RIO Env Int
+partOne :: Text -> Either Error Int
 partOne =
-    fmap (calcPartOne . partition)
-        . fromEither
-        . mapLeft Error
-        . Parsec.runParser inputParser () ""
-        . decodeUtf8Lenient
+  fmap (calcPartOne . partition)
+    . first Error
+    . Parsec.runParser inputParser () ""
 
 calcPartTwo :: ([Int], HashMap Int Int) -> Int
 calcPartTwo = run 0
   where
     run res (l : lnext, scoreMap) =
-        run (res + l * HashMap.lookupDefault 0 l scoreMap) (lnext, scoreMap)
+      run (res + l * HashMap.lookupDefault 0 l scoreMap) (lnext, scoreMap)
     run res _ = res
 
-partTwo :: ByteString -> RIO Env Int
+partTwo :: Text -> Either Error Int
 partTwo =
-    fmap (calcPartTwo . second makeScoreMap . partition)
-        . fromEither
-        . mapLeft Error
-        . Parsec.runParser inputParser () ""
-        . decodeUtf8Lenient
+  fmap (calcPartTwo . second makeScoreMap . partition)
+    . first Error
+    . Parsec.runParser inputParser () ""
 
 makeScoreMap :: [Int] -> HashMap Int Int
 makeScoreMap = run mempty
@@ -66,13 +66,6 @@ makeScoreMap = run mempty
 
 main :: IO ()
 main = do
-    input <- readFileBinary "./day01/input.txt"
-    logFileHandle <- openFile "./day01/debug.txt" ReadWriteMode
-    logOptions <- logOptionsHandle logFileHandle True
-    withLogFunc logOptions $ \logFunc -> do
-        partOneOutput <- runRIO (Env logFunc) (partOne input)
-        partTwoOutput <- runRIO (Env logFunc) (partTwo input)
-        runSimpleApp
-            $ logInfo ("Part One: " <> display partOneOutput)
-            >> logInfo ("Part Two: " <> display partTwoOutput)
-            >> hFlush logFileHandle
+  input <- decodeUtf8 <$> readFileLBS "./day01/input.txt"
+  print @String $ "Part one: " <> show (partOne input)
+  print (partTwo input)
